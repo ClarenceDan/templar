@@ -985,6 +985,12 @@ class Comms(ChainManager):
         # Clean up old gradients
         await self.cleanup_old_gradients(window)
 
+        if valid_uids:
+            tplr.logger.info(f"Successfully gathered gradients from peers: {valid_uids}")
+            tplr.logger.info(f"Total gathered gradients: {len(valid_uids)}/{len(uids)}")
+        else:
+            tplr.logger.warning("No valid gradients gathered from any peers")
+
         return SimpleNamespace(
             time=time.time() - start_time,
             state_dict=SimpleNamespace(**aggregated_state_dict),
@@ -1322,6 +1328,9 @@ class Comms(ChainManager):
                     "Checkpoint missing start_window or current_window info"
                 )
                 return False, {}, 0, optimizer, scheduler
+            
+            if checkpoint_data.get("transformer_state"):
+                transformer.load_state_dict(checkpoint_data["transformer_state"])
 
             window_difference = current_window - checkpoint_current_window
             global_step = current_window - checkpoint_start_window
@@ -1521,6 +1530,7 @@ class Comms(ChainManager):
             "model_state_dict": {
                 k: v.cpu().clone() for k, v in model.state_dict().items()
             },
+            "transformer_state": transformer.state_dict(),
             "optimizer_state_dict": {
                 k: v.cpu().clone() if torch.is_tensor(v) else v
                 for k, v in optimizer.state_dict().items()
