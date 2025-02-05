@@ -809,7 +809,7 @@ class Comms(ChainManager):
 
             # Check if we already have enough gradients locally
             existing_files = [f for f in os.listdir(local_dir) if f.endswith('.pt')]
-            if len(existing_files) >= 5:
+            if len(uids) > 3 and len(existing_files) >= len(uids) - 3:
                 tplr.logger.info(f"Already have enough gradients for window {window}")
                 return
 
@@ -833,7 +833,7 @@ class Comms(ChainManager):
 
                         # Check if we have enough gradients
                         current_files = [f for f in os.listdir(local_dir) if f.endswith('.pt')]
-                        if len(current_files) >= 5:
+                        if len(uids) > 3 and len(current_files) >= len(uids) - 3:
                             cancel_event.set()
                             return
 
@@ -942,7 +942,7 @@ class Comms(ChainManager):
         while time.time() - start_time < timeout:
             if os.path.exists(local_dir):
                 gradient_files = [f for f in os.listdir(local_dir) if f.endswith('.pt')]
-                if len(gradient_files) >= 5:
+                if len(uids) > 3 and len(gradient_files) >= len(uids) - 3:
                     break
             await asyncio.sleep(3)
             
