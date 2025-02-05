@@ -243,6 +243,18 @@ class Miner:
             self.peers = self.comms.peers
             tplr.logger.info(f'{tplr.P(step_window, tplr.T() - peer_start)} Updated peers - gather:{len(self.peers)}')
 
+            # Start background gradient download
+            asyncio.create_task(
+                self.comms.gather_download(
+                    my_uid=self.uid,
+                    uids=self.peers,
+                    window=step_window,
+                    key='gradient',
+                    device=self.config.device,
+                    global_step=self.global_step,
+                )
+            )
+
             # 2. Load training data for this window
             data_start = tplr.T()
             pages = await tplr.r2_dataset.R2DatasetLoader.next_pages(
