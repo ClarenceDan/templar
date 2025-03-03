@@ -355,18 +355,20 @@ class Miner:
                 else:
                     processed_state_dict[k] = v
 
-            # Launch the put operation as a background task
-            put_task = asyncio.create_task(
-                self.comms.put(
-                    state_dict=processed_state_dict,
-                    uid=str(self.uid),
-                    window=step_window,
-                    key="gradient",
-                    global_step=self.global_step,
-                    local=False,
-                    stale_retention=100,
-                )
+            # Launch the put operation
+            tplr.logger.info("Waiting on put task...")
+            start_upload_time = tplr.T()
+            await self.comms.put(
+                state_dict=processed_state_dict,
+                uid=str(self.uid),
+                window=step_window,
+                key="gradient",
+                global_step=self.global_step,
+                local=False,
+                stale_retention=100,
             )
+
+            tplr.logger.info(f"Put task completed! Time take for this upload:{tplr.P(step_window, tplr.T() - start_upload_time)} Time since this loop:{start_upload_time - window_start}")
 
             upload_size = sum(
                 tensor.element_size() * tensor.nelement()
@@ -462,12 +464,8 @@ class Miner:
             )
 
             # ---------------------------------------------------------------------
-            # 6. Await both gather and put tasks concurrently
+            # 6. Await gather concurrently
             # ---------------------------------------------------------------------
-
-            tplr.logger.info("Waiting on put task...")
-            await put_task
-            tplr.logger.info("Put task completed!")
 
             tplr.logger.info("Waiting on gather task...")
             gather_result = await gather_task
